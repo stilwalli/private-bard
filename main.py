@@ -145,7 +145,7 @@ async def callPrivateGemini(request: Request):
 
 @app.get("/")
 async def main(request: Request):
-    return JSONResponse(content={"Available APIs": ["/getBuckets", "/getFilesFromBucket/{bucket_name}"]}, status_code=200)
+    return JSONResponse(content={"Available APIs": ["/callPrivateGemini"]}, status_code=200)
 
 
 

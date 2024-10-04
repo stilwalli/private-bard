@@ -1,30 +1,26 @@
 # My Awesome Project
 
-This is a brief description of my awesome project.
+Emulates Google's bard using Vertex API. 
 
 ![Project Screenshot](images/bard.png)
 
-## Features
 
-* Feature 1
-* Feature 2
-* Feature 3
 
 ## Getting Started
 
 These instructions will get you a copy of the project up and running on your local machine for   
  development and testing purposes.
 
-### Prerequisites
+### Helpful Commands
 
-What things you need to install the software and how to install them.
-
+Run this to test the HTML locally
+uvicorn main:app --host 0.0.0.0 --port 80
 
 curl -X POST \
   -H "Authorization: Bearer $(gcloud auth print-identity-token)" \
   -H "Content-Type: application/json" \
   -d '{"user_prompt": "Give me sample letter for resignation in 20 words"}' \
-  "https://private-bard-906035941682.us-central1.run.app/callPrivateGemini"
+  "https://YOUR-URL/callPrivateGemini"
 
 
 
