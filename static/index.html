@@ -12,7 +12,7 @@
         async function sendPrompt() {
             const promptInput = document.getElementById('promptInput');
             const outputDiv = document.getElementById('output');
-            const apiUrl = 'https://private-bard-906035941682.us-central1.run.app/callPrivateGemini'; // Replace with your actual API URL
+            const apiUrl = 'https://Your-URL'; // Replace with your actual API URL
             try {
                 const token = await getAuthToken();
                 const response = await fetch(apiUrl, {
@@ -27,9 +27,7 @@
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
-                alert(5)
                 const data = await response.json();
-                alert(6)
                 outputDiv.innerHTML = `<p>API Response: ${JSON.stringify(data)}</p>`;
             } catch (error) {
                 console.error('Error:', error);

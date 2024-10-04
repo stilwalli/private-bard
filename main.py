@@ -148,6 +148,4 @@ async def main(request: Request):
     return JSONResponse(content={"Available APIs": ["/callPrivateGemini"]}, status_code=200)
 
 
-
-
 #callPrivateGemini()
