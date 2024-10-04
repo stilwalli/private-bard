@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script>
+        async function getAuthToken() {
+            // This is a placeholder function. In a real-world scenario,
+            // you would implement a secure way to obtain the token.
+            // DO NOT implement token retrieval in client-side JavaScript.
+            return "eyJhbGciOiJSUzI1NiIsImtpZCI6IjI4YTQyMWNhZmJlM2RkODg5MjcxZGY5MDBmNGJiZjE2ZGI1YzI0ZDQiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJhY2NvdW50cy5nb29nbGUuY29tIiwiYXpwIjoiNjE4MTA0NzA4MDU0LTlyOXMxYzRhbGczNmVybGl1Y2hvOXQ1Mm4zMm42ZGdxLmFwcHMuZ29vZ2xldXNlcmNvbnRlbnQuY29tIiwiYXVkIjoiNjE4MTA0NzA4MDU0LTlyOXMxYzRhbGczNmVybGl1Y2hvOXQ1Mm4zMm42ZGdxLmFwcHMuZ29vZ2xldXNlcmNvbnRlbnQuY29tIiwic3ViIjoiMTA0OTE3MDYzNDU3NzkyNDQyMzYyIiwiaGQiOiJzdGlsd2FsbGkuYWx0b3N0cmF0LmNvbSIsImVtYWlsIjoiYWRtaW5Ac3RpbHdhbGxpLmFsdG9zdHJhdC5jb20iLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwiYXRfaGFzaCI6ImxyYmlJY0pzMElXUzBsSHdxWUJwZ3ciLCJuYmYiOjE3MjgwNjgwOTYsImlhdCI6MTcyODA2ODM5NiwiZXhwIjoxNzI4MDcxOTk2LCJqdGkiOiI0ODg0OThkMTg2MDEyMTcxZDM0ZjUyNDM5ODdhYjFjN2JmMjRkYWZlIn0.kV6c2SZ27nv_2X-AEmPhrkSYDZJtmtKZjasBtBeralXllgvBC2W5CX5I-gsnx90_XBtAhADmFacyAvumLqCLfU2p7toITrSR_QceHJLO8Wx3VbY4Zsx7qXmusQrf2sPh7E-Qf3hK_ADbbPwqYzrVt8s5slfW1Y81f6c0-fb3wbynNhKzExss6BgYUeivsWk1U4JwfDr5xTPwbenXoqGM1JJWvmU0oZJJqR8np-5XWIPj1f0-WpKkggzBHL29RBG4RfjsIcnxCxkU_7B__VGjxqZRH6yE5wzJwStdnm9XhersN5Ljz9S6M-dUGTI0KU_8s2rtisOO1qmi2GBCrRGpUg";
+        }
+
+        async function sendPrompt() {
+            const promptInput = document.getElementById('promptInput');
+            const outputDiv = document.getElementById('output');
+            const apiUrl = 'https://private-bard-906035941682.us-central1.run.app/callPrivateGemini'; // Replace with your actual API URL
+            try {
+                const token = await getAuthToken();
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ user_prompt: promptInput.value }),
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                alert(5)
+                const data = await response.json();
+                alert(6)
+                outputDiv.innerHTML = `<p>API Response: ${JSON.stringify(data)}</p>`;
+            } catch (error) {
+                console.error('Error:', error);
+                outputDiv.innerHTML = `<p>Error: ${error.message}</p>`;
+            }
+        }
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gemini-like Page</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        header {
+            padding: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        main {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+        footer {
+            padding: 10px;
+            text-align: center;
+        }
+        .input-area {
+            width: 80%;
+            max-width: 600px;
+            margin-top: 20px;
+        }
+        .input-box {
+            width: 100%;
+            padding: 10px;
+            border-radius: 20px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div>Private Gemini ▼</div>
+        <div>User Icon</div>
+    </header>
+
+    <main>
+        <h1>Hello, <span id="username">Joe</span></h1>
+        <div class="input-area">
+            <input type="text" id="promptInput" class="input-box" placeholder="Enter a prompt here">
+            <button onclick="sendPrompt()">Send</button>
+        </div>
+        <div id="output"></div>
+    </main>
+
+    <footer>
+        <p>Developer - Shashank Tilwalli</p>
+    </footer>
+</body>
+</html>
