@@ -2,11 +2,20 @@
 import subprocess
 import os
 
+from vertexai.generative_models import (
+    GenerationConfig,
+    GenerativeModel,
+    HarmBlockThreshold,
+    HarmCategory,
+    Part,
+)
 
-from fastapi import FastAPI
+
+from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse, PlainTextResponse
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 import google
 import json
@@ -18,6 +27,9 @@ from google.cloud import storage
 import logging
 
 app = FastAPI()
+
+# Mount the static directory
+app.mount("/static", StaticFiles(directory="static"), name="static") 
 
 app.add_middleware(
     CORSMiddleware,
@@ -31,89 +43,104 @@ app.add_middleware(
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-def set_gcp_project(project_id):
-    """Sets the current GCP project ID."""
-    os.environ["GOOGLE_CLOUD_PROJECT"] = project_id
-    print(f"GCP project set to: {project_id}")
-
-
-
 # Get credentials automatically
 credentials, project_id = default()
 print ("project_id: ", project_id)
 
+@app.get("/hello")
+async def hello_get():
+  """
+  This is a simple GET request that returns "Hello, world!"
+  """
+  return {"message": "Hello, world!"}
 
-def gcloud_login():
-    """Calls 'gcloud auth login' and handles potential errors."""
-    try:
-        result = subprocess.run(
-            ["gcloud", "auth", "login"], 
-            check=True, 
-            capture_output=True, 
-            text=True, 
-        )
-        print("Authentication successful!")
-        print(f"Credentials saved to: {os.path.expanduser('~/.config/gcloud/credentials.db')}") 
-    except subprocess.CalledProcessError as e:
-        print(f"Authentication failed with error: {e.stderr}")
-
-def gcloud_logout():
-    """Revokes current gcloud credentials, effectively logging out."""
-    try:
-        result = subprocess.run(
-            ["gcloud", "auth", "revoke", "all"], 
-            check=True,  
-            capture_output=True, 
-            text=True,
-        )
-        print("Logged out successfully!")
-    except subprocess.CalledProcessError as e:
-        print(f"Logout failed with error: {e.stderr}")
+@app.post("/hello")
+async def hello_post(name: str): 
+  """
+  This is a simple POST request that takes a name as input and 
+  returns a greeting.
+  """
+  return {"message": f"Hello, {name}!"}
 
 
-def is_logged_in():
-    """Checks if valid GCP credentials exist."""
-    try:
-        # Check for application default credentials
-        credentials, p_id = google.auth.default()
-        print ("Project: ID:: ", p_id)
-        if not credentials.valid:  # Refresh if expired
-            credentials.refresh(google.auth.transport.requests.Request())
-        return credentials.valid
-    except google.auth.exceptions.DefaultCredentialsError:
-        return False
+@app.post("/hello2")
+async def hello_post(request: Request):
+    data = await request.json() 
+    name = data.get("name") 
+    if name:
+        return {"message": f"Hello, {name}!"}
+    else:
+        return {"error": "Name is missing in the request body"}
+
+#curl -X POST -H "Authorization: Bearer $(gcloud auth print-identity-token)" -H "Content-Type: application/json" -d '{"name": "write about India"}' https://private-bard-906035941682.us-central1.run.app/callPrivateGemini 
+#curl -X POST -H "Authorization: Bearer $(gcloud auth print-identity-token)" -H "Content-Type: application/json" -d '{"name": "write about India"}' https://private-bard-906035941682.us-central1.run.app/callPrivateGemini 
+#curl -X POST -H "Authorization: Bearer $(gcloud auth print-identity-token)" -H "Content-Type: application/json" d '{"user_prompt": "write about India"}' "https://private-bard-906035941682.us-central1.run.app/callPrivateGemini"
 
 
-@app.get("/getFilesFromBucket/{bucket_name}")
-def list_bucket_files_as_json(bucket_name):
+@app.post("/callPrivateGemini")
+async def callPrivateGemini(request: Request):
     """Lists all file names in the specified GCP bucket and returns them as JSON."""
     try:
-        storage_client = storage.Client()
-        bucket = storage_client.bucket(bucket_name)
-        blobs = bucket.list_blobs()  # Get all blobs (files and folders)
-        file_names = [blob.name for blob in blobs if not blob.name.endswith("/")]  # Filter out folders
-        res =  json.dumps(file_names, indent=2)  # Formatted JSON for readability
-        print (res)
-        return res
+        MODEL_ID = "gemini-1.5-flash-002"  # @param {type:"string"}
+        model = GenerativeModel(MODEL_ID)
+        # Load a example model with system instructions
+        example_model = GenerativeModel(
+            MODEL_ID,
+            system_instruction=[
+                "Your mission is to help users with their questions.",
+            ],
+        )
+        data = await request.json() 
+        user_prompt = data.get("user_prompt") 
+
+        print ("user_prompt: ", user_prompt)
+        
+        if not user_prompt:
+            return {"error": "Missing 'user_prompt' field in request body"}
+
+    # Set model parameters
+        generation_config = GenerationConfig(
+            temperature=0.9,
+            top_p=1.0,
+            top_k=32,
+            candidate_count=1,
+            max_output_tokens=8192,
+        )
+
+        # Set safety settings
+        safety_settings = {
+            HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_LOW_AND_ABOVE,
+            HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_LOW_AND_ABOVE,
+            HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_LOW_AND_ABOVE,
+            HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_LOW_AND_ABOVE,
+        }
+
+        #prompt = {user_prompt}
+
+        # Set contents to send to the model
+        contents = [user_prompt]
+        print ("Content: " , contents)
+        # Counts tokens
+        #print(example_model.count_tokens(contents))
+
+        # Prompt the model to generate content
+        response = example_model.generate_content(
+            contents,
+            generation_config=generation_config,
+            safety_settings=safety_settings,
+        )
+
+        # Print the model response
+        print(f"\n{response.text}")
+        return {"translated_text": response.text}
+        #print(f'\nUsage metadata:\n{response.to_dict().get("usage_metadata")}')
+        #print(f"\nFinish reason:\n{response.candidates[0].finish_reason}")
+        #print(f"\nSafety settings:\n{response.candidates[0].safety_ratings}")
 
     
     except Exception as e:
         return json.dumps({"error": str(e)})  # Return error as JSON
-    
 
-@app.get("/getBuckets")
-def list_buckets_as_json():
-    """Lists all buckets in the specified GCP project and returns them as JSON."""
-    try:
-        storage_client = storage.Client()
-        buckets = storage_client.list_buckets()
-        bucket_names = [bucket.name for bucket in buckets]  # Filter out folders
-        
-        res =  json.dumps(bucket_names, indent=2)  # Formatted JSON for readability
-        print (res)
-        return res
-    except Exception as e:
-        return json.dumps({"error": str(e)})
 
 
 @app.get("/")
@@ -123,16 +150,4 @@ async def main(request: Request):
 
 
 
-def init():
-    if is_logged_in():
-        print("GCP authentication is valid!")
-    else:
-        print("Not logged into GCP or credentials are invalid.")
-        set_gcp_project('scratchzone')
-        gcloud_login()
-        
-
-
-#list_bucket_files_as_json("pdfsfortesting0716")    
-list_buckets_as_json()
-list_bucket_files_as_json("pdfsfortesting0716")
+#callPrivateGemini()
