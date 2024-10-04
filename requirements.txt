@@ -1,0 +1,6 @@
+#requirement txt
+fastapi
+uvicorn
+pydub
+Pillow
+google-cloud-aiplatform
