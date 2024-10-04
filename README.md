@@ -1,9 +1,8 @@
-# My Awesome Project
+# Private Bard
 
 Emulates Google's bard using Vertex API. 
 
 ![Project Screenshot](images/bard.png)
-
 
 
 ## Getting Started
